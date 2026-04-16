@@ -1,23 +1,11 @@
 import { ApolloServer } from "@apollo/server";
 import { startStandaloneServer } from "@apollo/server/standalone";
-
-// The GraphQL schema
-const typeDefs = `#graphql
-  type Query {
-    hello: String
-  }
-`;
-
-// A map of functions which return data for the schema.
-const resolvers = {
-  Query: {
-    hello: () => "world",
-  },
-};
+import mergedTypeDefs from "./typeDefs/index.js";
+import mergedResolvers from "./resolvers/index.js";
 
 const server = new ApolloServer({
-  typeDefs,
-  resolvers,
+  typeDefs: mergedTypeDefs,
+  resolvers: mergedResolvers,
 });
 
 const { url } = await startStandaloneServer(server);
