@@ -3,5 +3,5 @@ export default {
   testMatch: ["**/tests/**/*.test.js"],
   verbose: true,
   transform: {},
-  setupFilesAfterFramework: ["./tests/setupTestDB.js"], // ← correct hook
+  setupFilesAfterEnv: ["./tests/setupTestDB.js"], // ✅ correct
 };
