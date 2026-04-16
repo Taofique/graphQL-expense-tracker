@@ -1,6 +1,6 @@
 export default {
   testEnvironment: "node",
-  testMatch: ["**/src/tests/**/*.test.js"],
+  testMatch: ["**/tests/**/*.test.js"], // fixed path
   verbose: true,
   transform: {},
 };
