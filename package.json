@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node --experimental-vm-modules node_modules/.bin/jest --runInBand",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest --runInBand --forceExit",
     "start": "node backend/index.js",
     "dev": "nodemon backend/index.js"
   },
