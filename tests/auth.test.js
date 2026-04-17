@@ -2,6 +2,7 @@ import { ApolloServer } from "@apollo/server";
 import mergedTypeDefs from "../backend/typeDefs/index.js";
 import mergedResolvers from "../backend/resolvers/index.js";
 import gql from "graphql-tag";
+import { query } from "express";
 
 let server;
 
@@ -108,5 +109,72 @@ describe("Authentication", () => {
 
     expect(response.body.singleResult.errors).toBeDefined();
     expect(response.body.singleResult.errors[0].message).toContain("Invalid");
+  });
+});
+
+describe("authUser Query", () => {
+  it("returns the currently authenticated user", async () => {
+    const signupResponse = await server.executeOperation({
+      query: gql`
+        mutation {
+          signUp(
+            input: {
+              username: "currentuser"
+              name: "Current User"
+              password: "pass123"
+              gender: "male"
+            }
+          ) {
+            _id
+            username
+          }
+        }
+      `,
+    });
+
+    const loginResponse = await server.executeOperation({
+      query: gql`
+        mutation {
+          login(input: { username: "currentuser", password: "pass123" }) {
+            _id
+            username
+          }
+        }
+      `,
+    });
+
+    const authResponse = await server.executeOperation({
+      query: gql`
+        query {
+          authUser {
+            _id
+            username
+            name
+            gender
+          }
+        }
+      `,
+    });
+
+    const data = authResponse.body.singleResult;
+    expect(data.authUser.username).toBe("currentuser");
+    expect(data.authUser.name).toBe("Current User");
+    expect(data.authUser._id).toBeDefined();
+  });
+
+  it("returns null when not authenticated", async () => {
+    const response = await server.executeOperation({
+      query: gql`
+        query {
+          authUser {
+            _id
+            username
+          }
+        }
+      `,
+    });
+
+    const { data } = response.body.singleResult;
+    expect(data.authUser).toBeNull();
   });
 });
