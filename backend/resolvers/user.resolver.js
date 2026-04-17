@@ -1,6 +1,7 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 
+
 const userResolvers = {
   Mutation: {
     signUp: async (_, { input }) => {
@@ -36,7 +37,7 @@ const userResolvers = {
       };
     },
 
-    login: async (_, { input }) => {
+    login: async (_, { input }, context) => {
       const { username, password } = input;
 
       const user = await User.findOne({ username });
@@ -49,18 +50,24 @@ const userResolvers = {
         throw new Error("Invalid password");
       }
 
-      return {
+      context.currentUser = {
         _id: user._id,
         username: user.username,
         name: user.name,
         gender: user.gender,
         profilePicture: user.profilePicture,
       };
+
+      return context.currentUser;
     },
   },
 
   Query: {
     _placeholder: () => "placeholder",
+    authUser: async (_, __, context) => {
+      console.log("authUser called, currentUser:", context.currentUser);
+      return context.currentUser;
+    },
   },
 };
 

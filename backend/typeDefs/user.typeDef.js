@@ -28,6 +28,8 @@ const userTypeDef = `#graphql
   # Add this Query type
   type Query {
     _placeholder: String
+    authUser: User
+
   }
 `;
 
