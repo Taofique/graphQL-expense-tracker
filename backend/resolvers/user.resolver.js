@@ -35,6 +35,28 @@ const userResolvers = {
         profilePicture: newUser.profilePicture,
       };
     },
+
+    login: async (_, { input }) => {
+      const { username, password } = input;
+
+      const user = await User.findOne({ username });
+      if (!user) {
+        throw new Error("User not found");
+      }
+
+      const isValid = await bcrypt.compare(password, user.password);
+      if (!isValid) {
+        throw new Error("Invalid password");
+      }
+
+      return {
+        _id: user._id,
+        username: user.username,
+        name: user.name,
+        gender: user.gender,
+        profilePicture: user.profilePicture,
+      };
+    },
   },
 
   Query: {

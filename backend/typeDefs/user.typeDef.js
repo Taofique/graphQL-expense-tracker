@@ -15,8 +15,14 @@ const userTypeDef = `#graphql
     gender: String!
   }
 
+  input LoginInput {
+    username: String!
+    password: String!
+  }
+
   type Mutation {
     signUp(input: SignUpInput!): User
+    login(input: LoginInput!): User
   }
 
   # Add this Query type
