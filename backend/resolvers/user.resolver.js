@@ -1,7 +1,6 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 
-
 const userResolvers = {
   Mutation: {
     signUp: async (_, { input }) => {
@@ -59,6 +58,15 @@ const userResolvers = {
       };
 
       return context.currentUser;
+    },
+
+    logout: async (_, __, context) => {
+      context.currentUser = null;
+
+      console.log("Logout called, current user after:", context.currentUser);
+      return {
+        message: "Logged out successfully",
+      };
     },
   },
 
