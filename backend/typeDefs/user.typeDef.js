@@ -29,7 +29,6 @@ const userTypeDef = `#graphql
   type Query {
     _placeholder: String
     authUser: User
-
   }
 `;
 

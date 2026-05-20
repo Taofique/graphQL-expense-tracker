@@ -3,7 +3,6 @@
 // import mergedTypeDefs from "../backend/typeDefs/index.js";
 // import mergedResolvers from "../backend/resolvers/index.js";
 
-
 // let server;
 // let testContext;
 
@@ -250,7 +249,6 @@
 //   });
 // });
 
-
 import { ApolloServer } from "@apollo/server";
 import mergedTypeDefs from "../backend/typeDefs/index.js";
 import mergedResolvers from "../backend/resolvers/index.js";
@@ -392,16 +390,13 @@ describe("Authentication", () => {
   });
 });
 
-
-
-
 describe("authUser Query", () => {
   it("returns the currently authenticated user", async () => {
     testContext.currentUser = null;
 
     await server.executeOperation(
       {
-        query: `
+        query: /* GraphQL */ `
           mutation {
             signUp(
               input: {
@@ -484,5 +479,125 @@ describe("authUser Query", () => {
     const { data } = response.body.singleResult;
 
     expect(data.authUser).toBeNull();
+  });
+});
+
+describe("Logout Mutation", () => {
+  it("logout - clears the current user and returns success message", async () => {
+    await server.executeOperation(
+      {
+        query: /* GraphQL */ `
+          mutation {
+            signUp(
+              input: {
+                username: "logoutuser"
+                name: "Logout User"
+                password: "pass123"
+                gender: "male"
+              }
+            ) {
+              _id
+              username
+            }
+          }
+        `,
+      },
+      {
+        contextValue: testContext,
+      }
+    );
+
+    const loginResponse = await server.executeOperation(
+      {
+        query: /* GraphQL */ `
+          mutation {
+            login(input: { username: "logoutuser", password: "pass123" }) {
+              _id
+              username
+            }
+          }
+        `,
+      },
+      {
+        contextValue: testContext,
+      }
+    );
+
+    testContext.currentUser = loginResponse.body.singleResult.data.login;
+
+    let authResponse = await server.executeOperation(
+      {
+        query: /* GraphQL */ `
+          query {
+            authUser {
+              username
+            }
+          }
+        `,
+      },
+      {
+        contextValue: testContext,
+      }
+    );
+
+    expect(authResponse.body.singleResult.data.authUser.username).toBe(
+      "logoutuser"
+    );
+
+    const logoutResponse = await server.executeOperation(
+      {
+        query: /* GraphQL */ `
+          mutation {
+            logout {
+              message
+            }
+          }
+        `,
+      },
+      {
+        contextValue: testContext,
+      }
+    );
+
+    const { data } = logoutResponse.body.singleResult;
+    expect(data.logout.message).toBe("Logged out successfully");
+
+    authResponse = await server.executeOperation(
+      {
+        query: /* GraphQL */ `
+          query {
+            authUser {
+              username
+            }
+          }
+        `,
+      },
+      {
+        contextValue: testContext,
+      }
+    );
+
+    expect(authResponse.body.singleResult.data.authUser).toBeNull();
+  });
+
+  it("logout - returns success message even if no user is logged in", async () => {
+    testContext.currentUser = null;
+
+    const response = await server.executeOperation(
+      {
+        query: /* GraphQL */ `
+          mutation {
+            logout {
+              message
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    const { data } = response.body.singleResult;
+    expect(data.logout.message).toBe("Logged out successfully");
+    expect(testContext.currentUser).toBeNull();
   });
 });
