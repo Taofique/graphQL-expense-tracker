@@ -374,3 +374,168 @@ describe("Transaction Query", () => {
     );
   });
 });
+
+describe("Update Transaction Mutation", () => {
+  it("updateTransaction - updates an existing transaction for authenticated user", async () => {
+    await server.executeOperation(
+      {
+        query: /* GraphQL */ `
+          mutation {
+            signUp(
+              input: {
+                username: "updateuser"
+                name: "Update User"
+                password: "pass123"
+                gender: "male"
+              }
+            ) {
+              _id
+              username
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    const loginResponse = await server.executeOperation(
+      {
+        query: /* GraphQL */ `
+          mutation {
+            login(input: { username: "updateuser", password: "pass123" }) {
+              _id
+              username
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    testContext.currentUser = loginResponse.body.singleResult.data.login;
+
+    const createResponse = await server.executeOperation(
+      {
+        query: /* GraphQL */ `
+          mutation {
+            createTransaction(
+              input: {
+                text: "Old Description"
+                amount: 100.00
+                type: "expense"
+                category: "food"
+                date: "2024-01-15"
+              }
+            ) {
+              _id
+              text
+              amount
+              category
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    const transactionId =
+      createResponse.body.singleResult.data.createTransaction._id;
+
+    const updateResponse = await server.executeOperation(
+      {
+        query: /* GraphQL */ `
+          mutation {
+            updateTransaction(
+              id: "${transactionId}"
+              input: {
+                text: "Updated Groceries"
+                amount: 75.50
+                category: "saving"
+              }
+            ) {
+              _id
+              text
+              amount
+              category
+              type
+              date
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    const { data } = updateResponse.body.singleResult;
+    expect(data.updateTransaction.text).toBe("Updated Groceries");
+    expect(data.updateTransaction.amount).toBe(75.5);
+    expect(data.updateTransaction.category).toBe("saving");
+    expect(data.updateTransaction.type).toBe("expense"); // Unchanged
+    expect(data.updateTransaction._id).toBe(transactionId);
+
+    const transactionInDb = await Transaction.findById(transactionId);
+    expect(transactionInDb.text).toBe("Updated Groceries");
+    expect(transactionInDb.amount).toBe(75.5);
+  });
+
+  it("updateTransaction - returns error if transaction not found", async () => {
+    await server.executeOperation(
+      {
+        query: /* GraphQL */ `
+          mutation {
+            signUp(
+              input: {
+                username: "updatenotfound"
+                name: "Update Not Found"
+                password: "pass123"
+                gender: "male"
+              }
+            ) {
+              _id
+              username
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    const loginResponse = await server.executeOperation(
+      {
+        query: /* GraphQL */ `
+          mutation {
+            login(input: { username: "updatenotfound", password: "pass123" }) {
+              _id
+              username
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    testContext.currentUser = loginResponse.body.singleResult.data.login;
+
+    const updateResponse = await server.executeOperation(
+      {
+        query: /* GraphQL */ `
+          mutation {
+            updateTransaction(
+              id: "507f1f77bcf86cd799439011"
+              input: { text: "This should fail", amount: 999.99 }
+            ) {
+              _id
+              text
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    expect(updateResponse.body.singleResult.errors).toBeDefined();
+    expect(updateResponse.body.singleResult.errors[0].message).toContain(
+      "Transaction not found"
+    );
+  });
+});
