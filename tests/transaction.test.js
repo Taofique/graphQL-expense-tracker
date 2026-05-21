@@ -832,3 +832,262 @@ describe("Delete Transaction Mutation", () => {
     expect(transactionInDb.text).toBe("User 1 Transaction");
   });
 });
+
+describe("Category Statistics Query", () => {
+  it("categoryStatistics - returns aggregated totals by category for authenticated user", async () => {
+    // Step 1: Create and login a user
+    await server.executeOperation(
+      {
+        query: `
+          mutation {
+            signUp(
+              input: {
+                username: "statsuser"
+                name: "Stats User"
+                password: "pass123"
+                gender: "male"
+              }
+            ) {
+              _id
+              username
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    const loginResponse = await server.executeOperation(
+      {
+        query: `
+          mutation {
+            login(
+              input: {
+                username: "statsuser"
+                password: "pass123"
+              }
+            ) {
+              _id
+              username
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    testContext.currentUser = loginResponse.body.singleResult.data.login;
+
+    // Step 2: Create multiple transactions in different categories
+    await server.executeOperation(
+      {
+        query: `
+          mutation {
+            createTransaction(
+              input: {
+                text: "Groceries"
+                amount: 150.00
+                type: "expense"
+                category: "food"
+                date: "2024-01-15"
+              }
+            ) {
+              _id
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    await server.executeOperation(
+      {
+        query: `
+          mutation {
+            createTransaction(
+              input: {
+                text: "Restaurant"
+                amount: 75.00
+                type: "expense"
+                category: "food"
+                date: "2024-01-16"
+              }
+            ) {
+              _id
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    await server.executeOperation(
+      {
+        query: `
+          mutation {
+            createTransaction(
+              input: {
+                text: "Rent"
+                amount: 1200.00
+                type: "expense"
+                category: "housing"
+                date: "2024-01-10"
+              }
+            ) {
+              _id
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    await server.executeOperation(
+      {
+        query: `
+          mutation {
+            createTransaction(
+              input: {
+                text: "Salary"
+                amount: 3000.00
+                type: "income"
+                category: "saving"
+                date: "2024-01-20"
+              }
+            ) {
+              _id
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    await server.executeOperation(
+      {
+        query: `
+          mutation {
+            createTransaction(
+              input: {
+                text: "Bus Pass"
+                amount: 50.00
+                type: "expense"
+                category: "transport"
+                date: "2024-01-18"
+              }
+            ) {
+              _id
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    // Step 3: Query category statistics
+    const statsResponse = await server.executeOperation(
+      {
+        query: `
+          query {
+            categoryStatistics {
+              category
+              totalAmount
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    // Step 4: Verify results
+    const { data } = statsResponse.body.singleResult;
+
+    // Should have 4 categories (food, housing, transport, saving)
+    expect(data.categoryStatistics).toHaveLength(4);
+
+    // Find each category and verify totals
+    const foodCategory = data.categoryStatistics.find(
+      (c) => c.category === "food"
+    );
+    expect(foodCategory.totalAmount).toBe(225.0); // 150 + 75
+
+    const housingCategory = data.categoryStatistics.find(
+      (c) => c.category === "housing"
+    );
+    expect(housingCategory.totalAmount).toBe(1200.0);
+
+    const transportCategory = data.categoryStatistics.find(
+      (c) => c.category === "transport"
+    );
+    expect(transportCategory.totalAmount).toBe(50.0);
+
+    const savingCategory = data.categoryStatistics.find(
+      (c) => c.category === "saving"
+    );
+    expect(savingCategory.totalAmount).toBe(3000.0);
+  });
+
+  it("categoryStatistics - returns empty array when user has no transactions", async () => {
+    // Step 1: Create and login a user with no transactions
+    await server.executeOperation(
+      {
+        query: `
+          mutation {
+            signUp(
+              input: {
+                username: "emptystats"
+                name: "Empty Stats"
+                password: "pass123"
+                gender: "female"
+              }
+            ) {
+              _id
+              username
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    const loginResponse = await server.executeOperation(
+      {
+        query: `
+          mutation {
+            login(
+              input: {
+                username: "emptystats"
+                password: "pass123"
+              }
+            ) {
+              _id
+              username
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    testContext.currentUser = loginResponse.body.singleResult.data.login;
+
+    // Step 2: Query category statistics
+    const statsResponse = await server.executeOperation(
+      {
+        query: `
+          query {
+            categoryStatistics {
+              category
+              totalAmount
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    // Step 3: Verify empty array
+    const { data } = statsResponse.body.singleResult;
+    expect(data.categoryStatistics).toHaveLength(0);
+  });
+});
