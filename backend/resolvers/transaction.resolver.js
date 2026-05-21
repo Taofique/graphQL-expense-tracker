@@ -35,6 +35,44 @@ const transactionResolvers = {
 
       return transaction;
     },
+
+    categoryStatistics: async (_, __, context) => {
+      // Check if user is authenticated
+      if (!context.currentUser) {
+        throw new Error("Not authenticated");
+      }
+
+      // Use MongoDB aggregation pipeline to group by category and sum amounts
+      const statistics = await Transaction.aggregate([
+        // Match only transactions belonging to the authenticated user
+        {
+          $match: {
+            userId: new mongoose.Types.ObjectId(context.currentUser._id),
+          },
+        },
+        // Group by category and calculate total amount
+        {
+          $group: {
+            _id: "$category",
+            totalAmount: { $sum: "$amount" },
+          },
+        },
+        // Project to rename _id to category
+        {
+          $project: {
+            category: "$_id",
+            totalAmount: 1,
+            _id: 0,
+          },
+        },
+        // Sort alphabetically by category name
+        {
+          $sort: { category: 1 },
+        },
+      ]);
+
+      return statistics;
+    },
   },
 
   Mutation: {
