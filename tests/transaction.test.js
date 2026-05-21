@@ -539,3 +539,296 @@ describe("Update Transaction Mutation", () => {
     );
   });
 });
+
+describe("Delete Transaction Mutation", () => {
+  it("deleteTransaction - deletes an existing transaction for authenticated user", async () => {
+    await server.executeOperation(
+      {
+        query: `
+          mutation {
+            signUp(
+              input: {
+                username: "deleteuser"
+                name: "Delete User"
+                password: "pass123"
+                gender: "male"
+              }
+            ) {
+              _id
+              username
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    const loginResponse = await server.executeOperation(
+      {
+        query: `
+          mutation {
+            login(
+              input: {
+                username: "deleteuser"
+                password: "pass123"
+              }
+            ) {
+              _id
+              username
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    testContext.currentUser = loginResponse.body.singleResult.data.login;
+
+    const createResponse = await server.executeOperation(
+      {
+        query: `
+          mutation {
+            createTransaction(
+              input: {
+                text: "To Be Deleted"
+                amount: 99.99
+                type: "expense"
+                category: "other"
+                date: "2024-01-15"
+              }
+            ) {
+              _id
+              text
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    const transactionId =
+      createResponse.body.singleResult.data.createTransaction._id;
+
+    let transactionInDb = await Transaction.findById(transactionId);
+    expect(transactionInDb).toBeDefined();
+
+    const deleteResponse = await server.executeOperation(
+      {
+        query: `
+          mutation {
+            deleteTransaction(id: "${transactionId}") {
+              _id
+              text
+              amount
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    const { data } = deleteResponse.body.singleResult;
+    expect(data.deleteTransaction._id).toBe(transactionId);
+    expect(data.deleteTransaction.text).toBe("To Be Deleted");
+
+    transactionInDb = await Transaction.findById(transactionId);
+    expect(transactionInDb).toBeNull();
+  });
+
+  it("deleteTransaction - returns error if transaction not found", async () => {
+    await server.executeOperation(
+      {
+        query: `
+          mutation {
+            signUp(
+              input: {
+                username: "deletenotfound"
+                name: "Delete Not Found"
+                password: "pass123"
+                gender: "male"
+              }
+            ) {
+              _id
+              username
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    const loginResponse = await server.executeOperation(
+      {
+        query: `
+          mutation {
+            login(
+              input: {
+                username: "deletenotfound"
+                password: "pass123"
+              }
+            ) {
+              _id
+              username
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    testContext.currentUser = loginResponse.body.singleResult.data.login;
+
+    const deleteResponse = await server.executeOperation(
+      {
+        query: `
+          mutation {
+            deleteTransaction(id: "507f1f77bcf86cd799439011") {
+              _id
+              text
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    expect(deleteResponse.body.singleResult.errors).toBeDefined();
+    expect(deleteResponse.body.singleResult.errors[0].message).toContain(
+      "Transaction not found"
+    );
+  });
+
+  it("deleteTransaction - cannot delete another user's transaction", async () => {
+    await server.executeOperation(
+      {
+        query: `
+          mutation {
+            signUp(
+              input: {
+                username: "user1"
+                name: "User One"
+                password: "pass123"
+                gender: "male"
+              }
+            ) {
+              _id
+              username
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    const loginResponse1 = await server.executeOperation(
+      {
+        query: `
+          mutation {
+            login(
+              input: {
+                username: "user1"
+                password: "pass123"
+              }
+            ) {
+              _id
+              username
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    testContext.currentUser = loginResponse1.body.singleResult.data.login;
+
+    const createResponse = await server.executeOperation(
+      {
+        query: `
+          mutation {
+            createTransaction(
+              input: {
+                text: "User 1 Transaction"
+                amount: 50.00
+                type: "expense"
+                category: "food"
+                date: "2024-01-15"
+              }
+            ) {
+              _id
+              text
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    const transactionId =
+      createResponse.body.singleResult.data.createTransaction._id;
+
+    await server.executeOperation(
+      {
+        query: `
+          mutation {
+            signUp(
+              input: {
+                username: "user2"
+                name: "User Two"
+                password: "pass123"
+                gender: "female"
+              }
+            ) {
+              _id
+              username
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    const loginResponse2 = await server.executeOperation(
+      {
+        query: `
+          mutation {
+            login(
+              input: {
+                username: "user2"
+                password: "pass123"
+              }
+            ) {
+              _id
+              username
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    testContext.currentUser = loginResponse2.body.singleResult.data.login;
+
+    const deleteResponse = await server.executeOperation(
+      {
+        query: `
+          mutation {
+            deleteTransaction(id: "${transactionId}") {
+              _id
+              text
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    expect(deleteResponse.body.singleResult.errors).toBeDefined();
+    expect(deleteResponse.body.singleResult.errors[0].message).toContain(
+      "Transaction not found"
+    );
+
+    const transactionInDb = await Transaction.findById(transactionId);
+    expect(transactionInDb).toBeDefined();
+    expect(transactionInDb.text).toBe("User 1 Transaction");
+  });
+});

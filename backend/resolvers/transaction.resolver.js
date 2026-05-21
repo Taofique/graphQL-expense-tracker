@@ -82,6 +82,34 @@ const transactionResolvers = {
 
       return updatedTransaction;
     },
+
+    deleteTransaction: async (_, { id }, context) => {
+      // Check if user is authenticated
+      if (!context.currentUser) {
+        throw new Error("Not authenticated");
+      }
+
+      // Check if ID is valid MongoDB ObjectId
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new Error("Invalid transaction ID format");
+      }
+
+      // Find transaction and ensure it belongs to the user
+      const transaction = await Transaction.findOne({
+        _id: id,
+        userId: context.currentUser._id,
+      });
+
+      if (!transaction) {
+        throw new Error("Transaction not found");
+      }
+
+      // Delete the transaction
+      await Transaction.findByIdAndDelete(id);
+
+      // Return the deleted transaction data
+      return transaction;
+    },
   },
 };
 
