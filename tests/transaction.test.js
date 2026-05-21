@@ -109,3 +109,113 @@ describe("Transaction Mutation", () => {
     expect(transactionInDb.userId.toString()).toBe(testContext.currentUser._id);
   });
 });
+
+describe("Transaction Query", () => {
+  it("transactions - returns all transactions for authenticated user", async () => {
+    await server.executeOperation(
+      {
+        query: /* GraphQL */ `
+          mutation {
+            signUp(
+              input: {
+                username: "queryuser"
+                name: "Query User"
+                password: "pass123"
+                gender: "male"
+              }
+            ) {
+              _id
+              username
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    const loginResponse = await server.executeOperation(
+      {
+        query: /* GraphQL */ `
+      mutation {
+        login(
+          input {
+            username: "queryuser"
+            password: "pass123"
+          }
+        ) {
+          _id
+          username
+        }
+      }`,
+      },
+      { contextValue: testContext }
+    );
+
+    testContext.currentUser = loginResponse.body.singleResult.data.login;
+
+    await server.executeOperation(
+      {
+        query: /* GraphQL */ `
+          mutation {
+            createTransaction(
+              input: {
+                text: "Groceries"
+                amount: 50.00
+                type: "expense"
+                category: "food"
+                date: "2026-01-15"
+              }
+            ) {
+              _id
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    await server.executeOperation(
+      {
+        query: /* GraphQL */ `
+          mutation {
+            createTransaction(
+              input: {
+                text: "Salary"
+                amount: 2000.00
+                type: "income"
+                category: "saving"
+                date: "2024-01-16"
+              }
+            ) {
+              _id
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    const queryResponse = await server.executeOperation(
+      {
+        query: `
+          query {
+            transactions {
+              _id
+              text
+              amount
+              type
+              category
+              date
+            }
+          }
+        `,
+      },
+      { contextValue: testContext }
+    );
+
+    const { data } = queryResponse.body.singleResult;
+    expect(data.transactions).toHaveLength(2);
+    expect(data.transactions[0].text).toBe("Groceries");
+    expect(data.transactions[1].text).toBe("Salary");
+  });
+});
