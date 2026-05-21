@@ -2,6 +2,26 @@ const transactionTypeDefs = `#graphql
   # Placeholder - will implement when we get to transactions
   type Transaction {
     _id: ID!
+    userId: ID!
+    text: String!
+    amount: Float!
+    type: String!
+    category: String!
+    date: String!
+    createdAt: String
+    updatedAt: String
+  }
+
+  input createTransactionInput {
+    text: String!
+    amount: Float!
+    type: String!
+    category: String!
+    date: String!
+  }
+
+  type Mutation {
+    createTransaction(input: createTransactionInput): Transaction
   }
 `;
 

@@ -1,7 +1,7 @@
 import { ApolloServer } from "@apollo/server";
-import mergedTypeDefs from "../backend/typeDefs";
-import mergedResolvers from "../backend/resolvers";
-import Transaction from "../backend/models/transaction.model";
+import mergedTypeDefs from "../backend/typeDefs/index.js";
+import mergedResolvers from "../backend/resolvers/index.js";
+import Transaction from "../backend/models/transaction.model.js";
 
 let server;
 let testContext;
@@ -17,32 +17,34 @@ beforeAll(async () => {
   await server.start();
 });
 
-beforeEach(() => {
+beforeEach(async () => {
   testContext.currentUser = null;
+  await Transaction.deleteMany({});
 });
 
 afterAll(async () => {
   await server.stop();
 });
 
-decribe("Transaction Mutation", () => {
-  it("crateTransaction - creates a new transaction for authenticated user", async () => {
+describe("Transaction Mutation", () => {
+  it("createTransaction - creates a new transaction for authenticated user", async () => {
     await server.executeOperation(
       {
-        query: /* GraphQL */ `
-                mutation: {
-                    signup(
-                        input: {
-                            username: "transactionuser",
-                            name: "Transaction User",
-                            password: "pass123",
-                            gender: "male"
-                        }
-                    ) {
-                        _id
-                        username
-                    }
-                }`,
+        query: `
+          mutation {
+            signUp(
+              input: {
+                username: "transactionuser"
+                name: "Transaction User"
+                password: "pass123"
+                gender: "male"
+              }
+            ) {
+              _id
+              username
+            }
+          }
+        `,
       },
       {
         contextValue: testContext,
@@ -51,7 +53,7 @@ decribe("Transaction Mutation", () => {
 
     const loginResponse = await server.executeOperation(
       {
-        query: /* GraphQL */ `
+        query: `
           mutation {
             login(input: { username: "transactionuser", password: "pass123" }) {
               _id
@@ -69,7 +71,7 @@ decribe("Transaction Mutation", () => {
 
     const createResponse = await server.executeOperation(
       {
-        query: /* GraphQL */ `
+        query: `
           mutation {
             createTransaction(
               input: {
@@ -83,6 +85,7 @@ decribe("Transaction Mutation", () => {
               _id
               text
               amount
+              type
               category
               date
             }
@@ -100,5 +103,9 @@ decribe("Transaction Mutation", () => {
     expect(data.createTransaction.type).toBe("expense");
     expect(data.createTransaction.category).toBe("food");
     expect(data.createTransaction._id).toBeDefined();
+
+    const transactionInDb = await Transaction.findOne({ text: "Groceries" });
+    expect(transactionInDb).toBeDefined();
+    expect(transactionInDb.userId.toString()).toBe(testContext.currentUser._id);
   });
 });
