@@ -1,5 +1,4 @@
 const transactionTypeDefs = `#graphql
-  # Placeholder - will implement when we get to transactions
   type Transaction {
     _id: ID!
     userId: ID!
@@ -18,6 +17,10 @@ const transactionTypeDefs = `#graphql
     type: String!
     category: String!
     date: String!
+  }
+
+  type Query {
+    transactions: [Transaction!]!
   }
 
   type Mutation {

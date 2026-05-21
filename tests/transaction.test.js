@@ -136,17 +136,13 @@ describe("Transaction Query", () => {
     const loginResponse = await server.executeOperation(
       {
         query: /* GraphQL */ `
-      mutation {
-        login(
-          input {
-            username: "queryuser"
-            password: "pass123"
+          mutation {
+            login(input: { username: "queryuser", password: "pass123" }) {
+              _id
+              username
+            }
           }
-        ) {
-          _id
-          username
-        }
-      }`,
+        `,
       },
       { contextValue: testContext }
     );
