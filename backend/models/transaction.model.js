@@ -7,7 +7,7 @@ const transactionSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    text: {
+    description: {
       type: String,
       required: true,
     },
@@ -20,6 +20,11 @@ const transactionSchema = new mongoose.Schema(
       enum: ["income", "expense"],
       required: true,
     },
+    paymentType: {
+      type: String,
+      enum: ["cash", "card", "crypto"],
+      required: true,
+    },
     category: {
       type: String,
       enum: [
@@ -29,17 +34,37 @@ const transactionSchema = new mongoose.Schema(
         "transport",
         "entertainment",
         "health",
+        "investment",
         "other",
       ],
       required: true,
+    },
+    location: {
+      type: String,
+      default: "",
     },
     date: {
       type: String,
       required: true,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
+// ✅ ADD THIS RIGHT HERE 👇
+transactionSchema.set("toJSON", {
+  transform: (_, ret) => {
+    ret.createdAt = ret.createdAt?.toISOString?.();
+    ret.updatedAt = ret.updatedAt?.toISOString?.();
+
+    // optional cleanup (recommended)
+    delete ret.__v;
+    return ret;
+  },
+});
+
 const Transaction = mongoose.model("Transaction", transactionSchema);
+
 export default Transaction;

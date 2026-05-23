@@ -7,6 +7,7 @@ import cors from "cors";
 import session from "express-session";
 import MongoStore from "connect-mongodb-session";
 import dotenv from "dotenv";
+
 import mergedTypeDefs from "./typeDefs/index.js";
 import mergedResolvers from "./resolvers/index.js";
 import connectDB from "./db/connectDB.js";
@@ -18,33 +19,29 @@ await connectDB();
 const app = express();
 const httpServer = http.createServer(app);
 
+app.use(express.json());
+
+app.use((req, res, next) => {
+  const query = req.body?.query;
+
+  if (!query) return next();
+  if (query.includes("__schema") || query.includes("IntrospectionQuery"))
+    return next();
+  if (req.path === "/favicon.ico") return next();
+
+  console.log("\n🔥 GRAPHQL REQUEST:");
+  console.log("Method:", req.method);
+  console.log("Path:", req.path);
+  console.log("Query:\n", query);
+
+  next();
+});
+
 const MongoDBStore = MongoStore(session);
+
 const store = new MongoDBStore({
   uri: process.env.MONGO_URI,
   collection: "sessions",
-
-  serialize: (session) => {
-    return JSON.stringify(session, (key, value) => {
-      if (value && value._bsontype === "ObjectID") {
-        return value.toString();
-      }
-      if (
-        value &&
-        value.toString &&
-        value.toString().match(/^[0-9a-fA-F]{24}$/)
-      ) {
-        return value.toString();
-      }
-      return value;
-    });
-  },
-  unserialize: (session) => {
-    return JSON.parse(session);
-  },
-});
-
-store.on("error", (error) => {
-  console.log("Session store error:", error);
 });
 
 app.use(
@@ -52,9 +49,9 @@ app.use(
     secret: process.env.SESSION_SECRET || "mysecret",
     resave: false,
     saveUninitialized: false,
-    store: store,
+    store,
     cookie: {
-      maxAge: 1000 * 60 * 60 * 24, // 1 day
+      maxAge: 1000 * 60 * 60 * 24,
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
     },
@@ -74,17 +71,21 @@ app.use(
     origin: "http://localhost:5173",
     credentials: true,
   }),
-  express.json(),
   expressMiddleware(server, {
-    context: async ({ req, res }) => ({
-      req,
-      res,
-      currentUser: req.session?.user || null,
-    }),
+    context: async ({ req, res }) => {
+      const user = req.session?.user || null;
+
+      return {
+        req,
+        res,
+        currentUser: user,
+      };
+    },
   })
 );
 
 const PORT = process.env.PORT || 4000;
+
 await new Promise((resolve) => httpServer.listen({ port: PORT }, resolve));
+
 console.log(`🚀 Server ready at http://localhost:${PORT}/graphql`);
-console.log(`💡 Connected to MongoDB Atlas with session store`);
