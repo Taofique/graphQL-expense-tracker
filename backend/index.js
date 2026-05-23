@@ -13,18 +13,16 @@ import connectDB from "./db/connectDB.js";
 
 dotenv.config();
 
-// Connect to real MongoDB
 await connectDB();
 
 const app = express();
 const httpServer = http.createServer(app);
 
-// Session store setup with connect-mongodb-session
 const MongoDBStore = MongoStore(session);
 const store = new MongoDBStore({
   uri: process.env.MONGO_URI,
   collection: "sessions",
-  // Convert ObjectId to string to avoid BSON issues
+
   serialize: (session) => {
     return JSON.stringify(session, (key, value) => {
       if (value && value._bsontype === "ObjectID") {
@@ -49,7 +47,6 @@ store.on("error", (error) => {
   console.log("Session store error:", error);
 });
 
-// Session middleware
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "mysecret",
@@ -64,7 +61,6 @@ app.use(
   })
 );
 
-// Apollo Server
 const server = new ApolloServer({
   typeDefs: mergedTypeDefs,
   resolvers: mergedResolvers,
@@ -73,7 +69,6 @@ const server = new ApolloServer({
 
 await server.start();
 
-// Express middleware
 app.use(
   cors({
     origin: "http://localhost:5173",
