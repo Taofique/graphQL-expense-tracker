@@ -1,11 +1,27 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import InputField from "../components/ui/InputField";
+import { useMutation } from "@apollo/client";
+import { LOGIN } from "../graphql/mutations/user.mutation";
+import toast from "react-hot-toast";
 
-const LoginPage = () => {
+const LoginPage = ({ onLogin }) => {
+  const navigate = useNavigate();
   const [loginData, setLoginData] = useState({
     username: "",
     password: "",
+  });
+
+  const [login, { loading }] = useMutation(LOGIN, {
+    onCompleted: async (data) => {
+      toast.success("Login successful!");
+      await onLogin();
+      setTimeout(() => navigate("/"), 1000);
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+    // Remove refetchQueries - let the page reload handle it
   });
 
   const handleChange = (e) => {
@@ -16,9 +32,18 @@ const LoginPage = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(loginData);
+    try {
+      await login({
+        variables: {
+          input: loginData,
+        },
+      });
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error(error.message);
+    }
   };
 
   return (
@@ -39,6 +64,7 @@ const LoginPage = () => {
                 name="username"
                 value={loginData.username}
                 onChange={handleChange}
+                autoComplete="off"
               />
 
               <InputField
@@ -48,21 +74,21 @@ const LoginPage = () => {
                 type="password"
                 value={loginData.password}
                 onChange={handleChange}
+                autoComplete="off"
               />
               <div>
                 <button
                   type="submit"
-                  className="w-full bg-black text-white p-2 rounded-md hover:bg-gray-800 focus:outline-none focus:bg-black  focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 transition-colors duration-300
-										disabled:opacity-50 disabled:cursor-not-allowed
-									"
+                  className="w-full bg-black text-white p-2 rounded-md hover:bg-gray-800 focus:outline-none focus:bg-black focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={loading}
                 >
-                  Login
+                  {loading ? "Logging in..." : "Login"}
                 </button>
               </div>
             </form>
             <div className="mt-4 text-sm text-gray-600 text-center">
               <p>
-                {"Don't"} have an account?{" "}
+                Don't have an account?{" "}
                 <Link to="/signup" className="text-black hover:underline">
                   Sign Up
                 </Link>
@@ -74,4 +100,5 @@ const LoginPage = () => {
     </div>
   );
 };
+
 export default LoginPage;

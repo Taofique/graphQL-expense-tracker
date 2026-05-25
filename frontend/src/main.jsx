@@ -8,9 +8,12 @@ import { ApolloClient, HttpLink, InMemoryCache, gql } from "@apollo/client";
 import { ApolloProvider } from "@apollo/client/react";
 
 const client = new ApolloClient({
-  link: new HttpLink({ uri: "http://localhost:4000/graphql" }),
+  link: new HttpLink({
+    uri: "http://localhost:4000/graphql",
+    credentials: "include",
+  }),
   cache: new InMemoryCache(), // Apollo client uses this to cache query results after fetching them
-  credentials: "include", // Apollo client sends cookies along with every request to the server.
+  // Apollo client sends cookies along with every request to the server.
 });
 
 createRoot(document.getElementById("root")).render(

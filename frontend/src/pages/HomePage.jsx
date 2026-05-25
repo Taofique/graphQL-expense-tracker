@@ -1,15 +1,17 @@
 import { Doughnut } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
-
 import Cards from "../components/ui/Cards";
 import TransactionForm from "../components/ui/TransactionForm";
-
 import { MdLogout } from "react-icons/md";
+import { LOGOUT } from "../graphql/mutations/user.mutation";
+import { useMutation, useApolloClient } from "@apollo/client";
+import toast from "react-hot-toast";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-const HomePage = () => {
+const HomePage = ({ onLogout }) => {
   const loading = false;
+  const client = useApolloClient();
 
   const transactions = [
     {
@@ -60,9 +62,16 @@ const HomePage = () => {
     ],
   };
 
-  const handleLogout = () => {
-    console.log("Logging out...");
-  };
+  const [logout, { loading: logoutLoading }] = useMutation(LOGOUT, {
+    onCompleted: async () => {
+      toast.success("Logged out successfully!");
+      await client.clearStore();
+      await onLogout();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
 
   return (
     <div className="flex flex-col gap-10 items-center max-w-7xl mx-auto px-4 py-8">
@@ -78,10 +87,10 @@ const HomePage = () => {
           alt="Avatar"
         />
 
-        {!loading ? (
+        {!logoutLoading ? (
           <MdLogout
             className="w-6 h-6 cursor-pointer hover:text-red-500 transition"
-            onClick={handleLogout}
+            onClick={() => logout()}
           />
         ) : (
           <div className="w-6 h-6 border-t-2 border-b-2 rounded-full animate-spin"></div>
@@ -93,7 +102,6 @@ const HomePage = () => {
         <div className="h-[320px] w-[320px] md:h-[360px] md:w-[360px]">
           <Doughnut data={chartData} />
         </div>
-
         <TransactionForm />
       </div>
 
