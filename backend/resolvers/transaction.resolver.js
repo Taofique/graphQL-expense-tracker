@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import Transaction from "../models/transaction.model.js";
+import User from "../models/user.model.js";
 
 // Helper function to get current user from either session or context
 const getCurrentUser = (context) => {
@@ -90,7 +91,6 @@ const transactionResolvers = {
         userId: currentUser._id,
       });
 
-      // ✅ FIXED: ensure consistent GraphQL output format
       return {
         ...transaction.toObject(),
         createdAt: transaction.createdAt.toISOString(),
@@ -150,6 +150,20 @@ const transactionResolvers = {
       await Transaction.findByIdAndDelete(id);
 
       return transaction;
+    },
+  },
+};
+
+export const TransactionFieldResolvers = {
+  Transaction: {
+    user: async (parent) => {
+      try {
+        const user = await User.findById(parent.userId);
+        return user;
+      } catch (err) {
+        console.error("Error getting user for transaction:", err);
+        throw new Error("Error getting user");
+      }
     },
   },
 };
