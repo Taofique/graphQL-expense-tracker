@@ -93,8 +93,8 @@ const transactionResolvers = {
 
       return {
         ...transaction.toObject(),
-        createdAt: transaction.createdAt.toISOString(),
-        updatedAt: transaction.updatedAt.toISOString(),
+        createdAt: transaction.createdAt?.toISOString(),
+        updatedAt: transaction.updatedAt?.toISOString(),
       };
     },
 

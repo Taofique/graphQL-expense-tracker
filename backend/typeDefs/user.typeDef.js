@@ -8,7 +8,7 @@ const userTypeDef = `#graphql
     profilePicture: String
   }
 
-  type logoutResponse {
+  type LogoutResponse {
     message: String!
   }
 
@@ -27,10 +27,9 @@ const userTypeDef = `#graphql
   type Mutation {
     signUp(input: SignUpInput!): User
     login(input: LoginInput!): User
-    logout: logoutResponse
+    logout: LogoutResponse
   }
 
-  # Add this Query type
   type Query {
     _placeholder: String
     authUser: User

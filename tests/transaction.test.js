@@ -242,6 +242,8 @@ describe("Transaction Query", () => {
 
 /* ---------------- UPDATE ---------------- */
 
+/* ---------------- UPDATE ---------------- */
+
 describe("Update Transaction", () => {
   it("updates transaction", async () => {
     await server.executeOperation(
@@ -312,6 +314,7 @@ describe("Update Transaction", () => {
     expect(updated.body.singleResult.data.updateTransaction.description).toBe(
       "Updated"
     );
+    expect(updated.body.singleResult.data.updateTransaction.amount).toBe(75);
   });
 });
 

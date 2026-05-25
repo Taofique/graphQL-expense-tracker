@@ -11,6 +11,7 @@ const transactionTypeDefs = `#graphql
     date: String!
     createdAt: String
     updatedAt: String
+    user: User
   }
 
   type CategoryStatistics {
@@ -45,7 +46,7 @@ const transactionTypeDefs = `#graphql
   }
 
   type Mutation {
-    createTransaction(input: createTransactionInput): Transaction
+    createTransaction(input: createTransactionInput!): Transaction
     updateTransaction(id: ID!, input: UpdateTransactionInput!): Transaction
     deleteTransaction(id: ID!): Transaction
   }
