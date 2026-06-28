@@ -62,7 +62,7 @@ app.use(
       maxAge: 1000 * 60 * 60 * 24,
       httpOnly: true,
       secure: isProd,
-      sameSite: isProd ? "none" : "lax",
+      sameSite: "lax",
       path: "/",
     },
     rolling: true,
