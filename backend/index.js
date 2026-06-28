@@ -7,6 +7,8 @@ import cors from "cors";
 import session from "express-session";
 import MongoStore from "connect-mongodb-session";
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 
 import mergedTypeDefs from "./typeDefs/index.js";
 import mergedResolvers from "./resolvers/index.js";
@@ -14,15 +16,21 @@ import connectDB from "./db/connectDB.js";
 
 dotenv.config();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 await connectDB();
 
 const app = express();
 const httpServer = http.createServer(app);
 
-// ✅ CORS - MUST be first and configured correctly
+const isProd = process.env.NODE_ENV === "production";
+
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: isProd
+      ? "https://your-app.onrender.com" // replace after first deploy
+      : "http://localhost:5173",
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
@@ -33,7 +41,6 @@ app.use(
 
 app.use(express.json());
 
-// ✅ Session store
 const MongoDBStore = MongoStore(session);
 const store = new MongoDBStore({
   uri: process.env.MONGO_URI,
@@ -44,7 +51,6 @@ store.on("error", (error) => {
   console.log("Session store error:", error);
 });
 
-// ✅ Session middleware with correct cookie settings
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "mysecret",
@@ -55,15 +61,14 @@ app.use(
     cookie: {
       maxAge: 1000 * 60 * 60 * 24,
       httpOnly: true,
-      secure: false,
-      sameSite: "lax",
+      secure: isProd,
+      sameSite: isProd ? "none" : "lax",
       path: "/",
     },
     rolling: true,
   })
 );
 
-// ✅ Logging middleware
 app.use((req, res, next) => {
   const query = req.body?.query;
   if (!query) return next();
@@ -79,7 +84,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Apollo Server
 const server = new ApolloServer({
   typeDefs: mergedTypeDefs,
   resolvers: mergedResolvers,
@@ -99,8 +103,15 @@ app.use(
   })
 );
 
+if (isProd) {
+  app.use(express.static(path.join(__dirname, "../frontend/dist")));
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "../frontend/dist", "index.html"));
+  });
+}
+
 const PORT = process.env.PORT || 4000;
 await new Promise((resolve) => httpServer.listen({ port: PORT }, resolve));
 
 console.log(`🚀 Server ready at http://localhost:${PORT}/graphql`);
-console.log(`💡 CORS enabled for http://localhost:5173`);
+console.log(`💡 Running in ${isProd ? "production" : "development"} mode`);
