@@ -3,6 +3,10 @@ import { BsCardText } from "react-icons/bs";
 import { MdOutlinePayments } from "react-icons/md";
 import { HiPencilAlt } from "react-icons/hi";
 import { Link } from "react-router-dom";
+import { useMutation } from "@apollo/client";
+import toast from "react-hot-toast";
+
+import { DELETE_TRANSACTION } from "../../graphql/mutations/transaction.mutation";
 
 const categoryColorMap = {
   saving: "from-green-700 to-green-400",
@@ -17,6 +21,29 @@ const Card = ({ transaction }) => {
   const cardClass =
     categoryColorMap[category?.toLowerCase()] || "from-gray-700 to-gray-500";
 
+  const [deleteTransaction, { loading: deleteLoading }] = useMutation(
+    DELETE_TRANSACTION,
+    {
+      refetchQueries: ["GetTransactions", "GetCategoryStatistics"],
+
+      onCompleted: () => {
+        toast.success("Transaction deleted successfully!");
+      },
+
+      onError: (error) => {
+        toast.error(error.message);
+      },
+    }
+  );
+
+  const handleDelete = async () => {
+    await deleteTransaction({
+      variables: {
+        id: _id,
+      },
+    });
+  };
+
   return (
     <div className={`rounded-xl p-4 shadow-lg bg-gradient-to-br ${cardClass}`}>
       <div className="flex flex-col gap-3">
@@ -27,7 +54,12 @@ const Card = ({ transaction }) => {
           </h2>
 
           <div className="flex items-center gap-3 text-white">
-            <FaTrash className="cursor-pointer hover:scale-110 transition" />
+            <FaTrash
+              onClick={handleDelete}
+              className={`cursor-pointer hover:scale-110 transition ${
+                deleteLoading ? "opacity-50 pointer-events-none" : ""
+              }`}
+            />
 
             <Link to={`/transaction/${_id}`}>
               <HiPencilAlt

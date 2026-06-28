@@ -1,9 +1,25 @@
+import { useMutation } from "@apollo/client";
+import { CREATE_TRANSACTION } from "../../graphql/mutations/transaction.mutation";
+import toast from "react-hot-toast";
+
 const TransactionForm = () => {
+  const [createTransaction, { loading }] = useMutation(CREATE_TRANSACTION, {
+    onCompleted: () => {
+      toast.success("Transaction created successfully!");
+      // Reset form
+      const form = document.getElementById("transactionForm");
+      if (form) form.reset();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+    refetchQueries: ["GetTransactions", "GetCategoryStatistics"],
+  });
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const form = e.target;
-
     const formData = new FormData(form);
 
     const transactionData = {
@@ -16,11 +32,26 @@ const TransactionForm = () => {
       date: formData.get("date"),
     };
 
-    console.log("transactionData", transactionData);
+    // Validate required fields
+    if (
+      !transactionData.description ||
+      !transactionData.amount ||
+      !transactionData.date
+    ) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    await createTransaction({
+      variables: {
+        input: transactionData,
+      },
+    });
   };
 
   return (
     <form
+      id="transactionForm"
       className="w-full max-w-lg flex flex-col gap-5 px-3"
       onSubmit={handleSubmit}
     >
@@ -29,9 +60,8 @@ const TransactionForm = () => {
         <label className="block uppercase text-white text-xs font-bold mb-2">
           Description
         </label>
-
         <input
-          className="w-full bg-gray-200 text-gray-700 rounded py-3 px-4"
+          className="w-full bg-gray-200 text-gray-700 rounded py-3 px-4 focus:outline-none focus:ring-2 focus:ring-pink-500"
           name="description"
           type="text"
           required
@@ -44,10 +74,9 @@ const TransactionForm = () => {
         <label className="block uppercase text-white text-xs font-bold mb-2">
           Type
         </label>
-
         <select
           name="type"
-          className="w-full bg-gray-200 text-gray-700 rounded py-3 px-4"
+          className="w-full bg-gray-200 text-gray-700 rounded py-3 px-4 focus:outline-none focus:ring-2 focus:ring-pink-500"
         >
           <option value="expense">Expense</option>
           <option value="income">Income</option>
@@ -61,10 +90,9 @@ const TransactionForm = () => {
           <label className="block uppercase text-white text-xs font-bold mb-2">
             Payment
           </label>
-
           <select
             name="paymentType"
-            className="w-full bg-gray-200 text-gray-700 rounded py-3 px-4"
+            className="w-full bg-gray-200 text-gray-700 rounded py-3 px-4 focus:outline-none focus:ring-2 focus:ring-pink-500"
           >
             <option value="cash">Cash</option>
             <option value="card">Card</option>
@@ -77,10 +105,9 @@ const TransactionForm = () => {
           <label className="block uppercase text-white text-xs font-bold mb-2">
             Category
           </label>
-
           <select
             name="category"
-            className="w-full bg-gray-200 text-gray-700 rounded py-3 px-4"
+            className="w-full bg-gray-200 text-gray-700 rounded py-3 px-4 focus:outline-none focus:ring-2 focus:ring-pink-500"
           >
             <option value="food">Food</option>
             <option value="housing">Housing</option>
@@ -98,13 +125,13 @@ const TransactionForm = () => {
           <label className="block uppercase text-white text-xs font-bold mb-2">
             Amount
           </label>
-
           <input
             name="amount"
             type="number"
+            step="0.01"
             required
             placeholder="150"
-            className="w-full bg-gray-200 text-gray-700 rounded py-3 px-4"
+            className="w-full bg-gray-200 text-gray-700 rounded py-3 px-4 focus:outline-none focus:ring-2 focus:ring-pink-500"
           />
         </div>
       </div>
@@ -115,12 +142,11 @@ const TransactionForm = () => {
           <label className="block uppercase text-white text-xs font-bold mb-2">
             Location
           </label>
-
           <input
             name="location"
             type="text"
             placeholder="Dhaka"
-            className="w-full bg-gray-200 text-gray-700 rounded py-3 px-4"
+            className="w-full bg-gray-200 text-gray-700 rounded py-3 px-4 focus:outline-none focus:ring-2 focus:ring-pink-500"
           />
         </div>
 
@@ -128,22 +154,22 @@ const TransactionForm = () => {
           <label className="block uppercase text-white text-xs font-bold mb-2">
             Date
           </label>
-
           <input
             type="date"
             name="date"
             required
-            className="w-full bg-gray-200 text-gray-700 rounded py-3 px-4"
+            className="w-full bg-gray-200 text-gray-700 rounded py-3 px-4 focus:outline-none focus:ring-2 focus:ring-pink-500"
           />
         </div>
       </div>
 
       {/* BUTTON */}
       <button
-        className="text-white font-bold w-full rounded px-4 py-3 bg-gradient-to-br from-pink-500 to-pink-600 hover:opacity-90"
+        className="text-white font-bold w-full rounded px-4 py-3 bg-gradient-to-br from-pink-500 to-pink-600 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
         type="submit"
+        disabled={loading}
       >
-        Add Transaction
+        {loading ? "Adding Transaction..." : "Add Transaction"}
       </button>
     </form>
   );

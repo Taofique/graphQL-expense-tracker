@@ -2,7 +2,7 @@ const TransactionFormSkeleton = () => {
   return (
     <div className="h-screen max-w-lg mx-auto flex flex-col gap-5 py-10 px-4">
       {/* TITLE */}
-      <div className="h-8 w-2/3 bg-gray-300 rounded animate-pulse" />
+      <div className="h-8 w-2/3 bg-gray-300 rounded animate-pulse mx-auto" />
 
       {/* DESCRIPTION */}
       <div className="space-y-2">
@@ -22,7 +22,6 @@ const TransactionFormSkeleton = () => {
           <div className="h-4 w-1/2 bg-gray-300 rounded animate-pulse" />
           <div className="h-10 w-full bg-gray-300 rounded animate-pulse" />
         </div>
-
         <div className="space-y-2">
           <div className="h-4 w-1/2 bg-gray-300 rounded animate-pulse" />
           <div className="h-10 w-full bg-gray-300 rounded animate-pulse" />

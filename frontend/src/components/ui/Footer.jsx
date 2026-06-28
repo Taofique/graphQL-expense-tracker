@@ -19,7 +19,7 @@ const Footer = () => {
               to="/"
               className="bg-gradient-to-r from-indigo-400 to-sky-400 bg-clip-text text-transparent"
             >
-              GQL
+              Tracker
             </Link>
           </h2>
 
